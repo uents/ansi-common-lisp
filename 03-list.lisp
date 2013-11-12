@@ -214,6 +214,149 @@
 		   (my-member-if func (cdr lst)))))
 
 
+;;;;------------------------------------
+;;;; 3.11 シーケンス
+;;;;------------------------------------
+
+;;; シーケンス (sequence)
+;;;  - オブジェクトが特定の順序で並んでいるもの
+;;;  - Common Lispではリストとベクタをあわせてシーケンスと呼ぶ
+
+;;; length : シーケンスの長さを返す
+(length '(a b c))
+
+;;; subseq : シーケンスの一部をコピーする
+(subseq '(a b c d) 1 2) ;; ==> (B)
+(subseq '(a b c d) 1)   ;; ==> (B C D)
+
+;;; reverse : シーケンスの並びを逆転させる
+(reverse '(a b c))  ;; ==> (C B A)
+
+;;; 回文かどうかのチェック関数
+(defun mirror? (s)
+  (let ((len (length s)))
+	(and (evenp len)                          ;; 文字数が偶数かつ
+		 (let ((mid (/ len 2)))
+		   (equal (subseq s 0 mid)            ;; 文字列の前半と
+				  (reverse (subseq s mid)))   ;; 文字列の後半の転置が一致
+		   ))))
+
+;;; sort : 比較関数に従ってソートする
+;;;        破壊的な関数なので注意
+
+(setf lst '(0 2 1 3 8))
+(sort lst #'>)  ;; ==> (8 3 2 1 0)
+lst  ;; ==> (8 3 2 1 0)
+
+(defun nthmost (n lst) ;; n番目に大きい要素を返す
+  (nth (- n 1)
+	   (sort (copy-list lst) #'>)))
+
+(setf lst '(0 2 1 3 8))
+(nthmost 2 lst) ;; ==> 3
+lst ;; ==> (0 2 1 3 8)
+    ;;     nthmostの中でlstはコピーされるため破壊されていない
+
+
+;;; every, some :
+;;;  - 引数のシーケンスが１つの場合
+;;;     述語の引数にシーケンスの各要素を与える
+;;;  - 引数のシーケンスが２つの場合
+;;;     述語の引数に全てのシーケンスから１つずつ要素を与える
+
+(every #'oddp '(1 3 5))  ;; ==> T
+(every #'oddp '(1 2 3))  ;; ==> NIL
+(some #'oddp '(1 3 5))   ;; ==> T
+(some #'oddp '(1 2 3))   ;; ==> T
+
+(every #'> '(10 11 12) '(1 2 3))  ;; ==> T
+
+
+;;;;------------------------------------
+;;;; 3.12 スタック
+;;;;------------------------------------
+
+;;; push, pop : リストの前方へ/から要素を加える/取り出す
+
+(setf lst '(b c))
+(push 'a lst)  ;; ==> (A B C)
+(pop lst)      ;; ==> A
+
+(defun my-push (obj lst)
+  (setf lst (cons obj lst))) ;; これではlstを更新できない
+                             ;; (更新するやり方がわからず..)
+
+(defun my-pop (lst)
+  (let ((x (car lst)))
+	(setf lst (cdr lst)) ;; これではlstを破壊できない
+                         ;; (破壊するやり方がわからず..)
+	x))
+
+(defun my-reverse (lst)
+  (let ((acc nil)) ; accはaccumelationの略かな
+	(dolist (obj lst)
+	  (push obj acc))
+	acc))
+
+;; pushnew : pushの変形版。要素の追加にconsではなくadjoinを使う
+(setf x '(a b)) 
+(pushnew 'c x)   ;; ==> (C A B)
+(pushnew 'a x)   ;; ==> (C A B)のまま (aはもうリストメンバなのでpushされない)
+
+
+;;;;------------------------------------
+;;;; 3.13 ドットリスト
+;;;;------------------------------------
+
+;;; 真リスト : nilかcdr部が真リストであるコンス
+;;;            listで作られるリストは常に真リスト
+
+(defun proper-list? (x)
+  (or (null x)
+	  (and (consp x)
+		   (proper-list? (cdr x)))))
+
+(proper-list? (list 1 2 3))            ;; ==> T
+(proper-list? (cons 'a (cons 'b nil))) ;; ==> T
+(proper-list? (cons 'a (cons 'b 'c)))  ;; ==> NIL
+
+
+;;; ドットリスト : 真リストでないコンス
+;;;                car部とcdr部がドットで分離表示される
+
+(cons 'a 'b)                    ;; ==> (A . B)
+(cons '(x y) 'a)                ;; ==> ((X Y) . (A B))
+(cons '(x y) '(a b))            ;; ==> ((X Y) A B)
+(cons '(x y) (cons '(a b) 'c))  ;; ==> ((X Y) (A B) . C)
+
+; 単純にドットでも書ける
+'(a . b)  ;; ==> (A . B)
+
+
+;;;;------------------------------------
+;;;; 3.14 連想リスト
+;;;;------------------------------------
+
+;;; コンスのリストは連想リスト(assoc-list) またはalistと呼ばれる
+(setf trans '((+ . "add") (- . "substract"))) ;; ==> ((+ . "add") (- . "substract"))
+
+; 上記はこう書くのと同じ
+(setf trans2 (list (cons '+ "add") (cons '- "substract")))
+
+;;; assoc : 指定されたキーからペアを引き出す
+(assoc '+ trans) ;; ==> (+ . "add")
+
+(defun my-assoc (key alist)
+  (and (consp alist)
+	   (let ((pair (car alist)))
+		 (if (eql key (car pair))
+			 pair
+		     (my-assoc key (cdr alist))))))
+
+(my-assoc '+ trans)  ;; ==> (+ . "add")
+(my-assoc '* trans)  ;; ==> NIL
+
+
 
 ;;;;------------------------------------
 ;;;; 3.x 
