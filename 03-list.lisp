@@ -357,6 +357,37 @@ lst ;; ==> (0 2 1 3 8)
 (my-assoc '* trans)  ;; ==> NIL
 
 
+;;;;------------------------------------
+;;;; 3.15 例：最短経路
+;;;;------------------------------------
+
+;;; shortest-path 最短経路を返す
+;;;  start : 出発ノード
+;;;  end   : 目的地ノード
+;;;  net   : ネットワーク
+
+(defun shortest-path (start end net)
+  (bfs end (list (list start)) net))
+
+(defun bfs (end queue net)
+  (print queue)
+  (if (null queue)
+	  nil
+	  (let ((path (car queue)))
+		(let ((node (car path)))
+		  (if (eql node end)
+			  (reverse path)
+			  (bfs end
+				   (append (cdr queue)
+						   (new-paths path node net))
+				   net))))))
+
+(defun new-paths (path node net)
+  (mapcar #'(lambda (n)
+			  (cons n path))
+		  (cdr (assoc node net))))
+
+
 
 ;;;;------------------------------------
 ;;;; 3.x 
