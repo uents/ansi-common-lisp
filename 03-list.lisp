@@ -390,8 +390,85 @@ lst ;; ==> (0 2 1 3 8)
 
 
 ;;;;------------------------------------
-;;;; 3.x 
+;;;; 3.x 練習問題
 ;;;;------------------------------------
 
+;;; 2. もとのリストでの要素の並びを保持するように動作する
+;;;    unionの変形版を書け
 
+;; unionを使うと順序が保証できないのでappendで連結する
+(defun new-union (x y)
+  (if (null y)
+	  x
+	  (new-union (if (member (car y) x)
+					 x
+					 (append x (list (car y))))
+				 (cdr y))))
+
+
+
+;;; 3. １つのリストを引数として、おのおのの要素について同じもの（eqlで比較）
+;;;    が出現する回数を示すリストを返す関数を定義せよ
+
+(defun occurences-base (result elt rest)
+;  (format t "~A ~A ~A ~%" result elt rest)
+  (if (null elt)
+	  result
+	  (let ((pair (assoc elt result)))
+		(if (null pair)
+			(progn
+			  (setf pair (cons elt 1))
+			  (setf result (append result (list pair)))
+			  )
+		    (setf (cdr pair) (+ (cdr pair) 1)))
+		(occurences-base result (car rest) (cdr rest)))))
+
+(defun occurences (lst)
+  (sort (occurences-base nil (car lst) (cdr lst)) #'> :key #'cdr))
+
+
+;;; 4. なぜ (member '(a) '((a) (b))) は nil を返すのか？
+;;;
+;;; - 比較関数がeqlのため、異なるオブジェクトは偽となる
+;;; - tを返すようにするには、:test にequalを指定する
+
+
+;;; 5. 関数pos+は1つのリストを引数として、おのおのの要素にその位置を示す数を加えて返す
+
+;;; (a) 再帰版
+
+(defun pos+-iter-base (result pos rest)
+;  (format t "~A ~A ~A ~%" result pos rest)
+  (if (null rest)
+	  result
+	  (progn
+		(let ((elt (list (+ pos (car rest)))))
+		  (setf result (append result elt)))
+		(pos+-iter-base result (+ pos 1) (cdr rest)))))
+
+(defun pos+-iter (lst)
+  (pos+-iter-base nil 0 lst))
+
+
+;;; (b) 反復版
+
+(defun pos+-recur-base (result pos rest)
+  (dolist (obj rest)
+	(progn
+	  (setf result (append result (list (+ pos obj))))
+	  (setf pos (+ pos 1))
+;	  (format t "~A ~A ~A ~%" result pos obj)
+	  ))
+  result)
+
+(defun pos+-recur (lst)
+  (pos+-recur-base nil 0 lst))
+
+
+;;; (c) mapcarを用いる版
+
+(defun pos+-map (lst)
+  (let ((pos -1))
+	(mapcar #'(lambda (x) (progn (setf pos (+ pos 1)) (+ x pos)))
+			lst)))
 
