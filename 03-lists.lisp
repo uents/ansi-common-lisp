@@ -410,6 +410,10 @@ lst ;; ==> (0 2 1 3 8)
 ;;; 3. １つのリストを引数として、おのおのの要素について同じもの（eqlで比較）
 ;;;    が出現する回数を示すリストを返す関数を定義せよ
 
+(defun occurences (lst)
+  (sort (occurences-base nil (car lst) (cdr lst))
+		#'> :key #'cdr))
+
 (defun occurences-base (result elt rest)
 ;  (format t "~A ~A ~A ~%" result elt rest)
   (if (null elt)
@@ -423,9 +427,6 @@ lst ;; ==> (0 2 1 3 8)
 		    (setf (cdr pair) (+ (cdr pair) 1)))
 		(occurences-base result (car rest) (cdr rest)))))
 
-(defun occurences (lst)
-  (sort (occurences-base nil (car lst) (cdr lst)) #'> :key #'cdr))
-
 
 ;;; 4. なぜ (member '(a) '((a) (b))) は nil を返すのか？
 ;;;
@@ -435,7 +436,10 @@ lst ;; ==> (0 2 1 3 8)
 
 ;;; 5. 関数pos+は1つのリストを引数として、おのおのの要素にその位置を示す数を加えて返す
 
-;;; (a) 再帰版
+;; 5-a. 再帰版
+
+(defun pos+-iter (lst)
+  (pos+-iter-base nil 0 lst))
 
 (defun pos+-iter-base (result pos rest)
 ;  (format t "~A ~A ~A ~%" result pos rest)
@@ -446,11 +450,11 @@ lst ;; ==> (0 2 1 3 8)
 		  (setf result (append result elt)))
 		(pos+-iter-base result (+ pos 1) (cdr rest)))))
 
-(defun pos+-iter (lst)
-  (pos+-iter-base nil 0 lst))
 
+;; 5-b. 反復版
 
-;;; (b) 反復版
+(defun pos+-recur (lst)
+  (pos+-recur-base nil 0 lst))
 
 (defun pos+-recur-base (result pos rest)
   (dolist (obj rest)
@@ -461,14 +465,37 @@ lst ;; ==> (0 2 1 3 8)
 	  ))
   result)
 
-(defun pos+-recur (lst)
-  (pos+-recur-base nil 0 lst))
 
-
-;;; (c) mapcarを用いる版
+;; 5-c. mapcarを用いる版
 
 (defun pos+-map (lst)
   (let ((pos -1))
 	(mapcar #'(lambda (x) (progn (setf pos (+ pos 1)) (+ x pos)))
 			lst)))
 
+
+;;; longest-path
+
+(defun longest-path (start end net)
+  (bfs-ex end (list (list start)) net nil))
+
+(defun bfs-long (end queue net sol)
+  (format t "queue=~A sol=~A ~%" queue sol)
+  (if queue
+	  (let ((path (car queue)))
+		(let ((node (car path)))
+		  (bfs-long end
+					(append (cdr queue)
+							(new-paths path node net))
+;							(new-paths-ex path node net))
+				  net
+				  (if (eql node end) path sol))))
+	(reverse sol)))
+
+(defun new-paths-ex (path node net)
+  (let (acc)
+	(dolist (x (cdr (assoc node net)))
+	  (or (member x path)
+		  (push (cons x path) acc)))
+	acc))
+  
