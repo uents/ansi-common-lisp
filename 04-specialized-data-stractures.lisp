@@ -8,8 +8,7 @@
 ;;;;------------------------------------
 
 ;;; 初期値なしで配列を生成
-(setf arr (make-array '(2 3)
-					  :initial-element nil))
+(setf arr (make-array '(2 3) :initial-element nil))
 ; -> #2A((NIL NIL NIL) (NIL NIL NIL))
 
 ;;; 0行0列目にアクセス
@@ -19,8 +18,7 @@
 (setf (aref arr 0 0) 'b)
 
 ;;; 1次元配列はベクターと呼ばれる
-(setf vec (make-array 4 
-					  :initial-element nil))
+(setf vec (make-array 4 :initial-element nil))
 ; -> #(NIL NIL NIL NIL)
 
 ;;; ベクターへのアクセス
@@ -193,6 +191,201 @@
 		(+ p 1)
 	    nil)))
 
+
+
+;;;;------------------------------------
+;;;; 4.6 ストラクチャ
+;;;;------------------------------------
+
+;;; defstruct で point を定義すると
+;;; make-point, copy-point, point-x, point-y, point-p のような
+;;; 関数も同時に定義される
+(defstruct point
+  x
+  y)
+
+(setf p (make-point :x 0 :y 0))
+;; -> #S(POINT :X 0 :Y 0)
+
+(point-p p) ;; -> T
+(typep p 'point) ;; -> T
+
+
+(defstruct polemic
+  (type (progn
+		  (format t "what kind of polemic was it? ")
+		  (read)))
+  (effect nil))
+
+(setf p (make-polemic))
+;; what kind of polemic was it? foo
+;; -> #S(POLEMIC :TYPE FOO :EFFECT NIL)
+;;
+;; typeは標準入力値、effectはデフォルト値が指定される
+
+(polemic-type p)   ;; -> FOO
+(polemic-effect p) ;; -> NIL
+
+
+(defstruct (point (:conc-name p)
+				  (:print-function print-point))
+  (x 0)
+  (y 0))
+
+(defun print-point (p stream depth)
+  (format stream "#<~A,~A>" (px p) (py p)))
+
+(setf p (make-point)) ;; -> #<0,0>
+(px p) ;; -> 0
+(px y) ;; -> 0
+
+(setf q (make-point :x 1 :y 2)) ;; -> #<1,2>
+(setf r (make-point :x 3 :y 4 :z 5)) ;; -> エラー
+
+;; conc-name でフィールドのアクセス関数名を変えているため
+;; (point-x p) (point-y p) などはエラーする
+
+
+
+;;;;------------------------------------
+;;;; 4.7 例：二分探索木
+;;;;------------------------------------
+
+(defstruct (node (:print-function
+				  (lambda (n stream depth)
+					(format stream "#<~A>" (node-elt n)))))
+  elt
+  (l nil)
+  (r nil))
+
+(defun bst-insert (obj bst test)
+  (if (null bst)
+	  (make-node :elt obj)
+	  (let ((elt (node-elt bst)))
+		(if (eql obj elt)
+			bst
+		    (if (funcall test obj elt)
+				(make-node
+				 :elt elt
+				 :l (bst-insert obj (node-l bst) test)
+				 :r (node-r bst))
+			    (make-node
+				 :elt elt
+				 :l (node-l bst)
+				 :r (bst-insert obj (node-r bst) test))
+				)))))
+
+
+(defun bst-print (bst &optional (depth 0))
+  (if (null bst)
+	  (format t (concatenate 'string "~" (format nil "~A" (* depth 2)) "~#nil~%"))
+	  (progn
+		(format t (concatenate 'string "~" (format nil "~A" (* depth 2)) "~#<~A>~%")
+				(node-elt bst))
+		(bst-print (node-l bst) (+ depth 1))
+		(bst-print (node-r bst) (+ depth 1)))
+	  ))
+
+(defun bst-find (obj bst test)
+  (if (null bst)
+	  nil
+	  (let ((elt (node-elt bst)))
+		(if (eql obj test)
+			bst
+		    (if (funcall test obj elt)
+				(bst-find obj (node-l bst) test)
+			    (bst-find obj (node-r bst) test)
+				)))))
+
+
+;; 終端まで行くとnilとなるので
+;; -> (and bst (or nil bst) 
+;; -> (and bst bst)
+;; -> bst
+;; となり bst が返る
+
+(defun bst-min (bst)
+  (and bst
+	   (or (bst-min (node-l bst)) bst)))
+
+(defun bst-max (bst)
+  (and bst
+	   (or (bst-max (node-r bst)) bst)))
+
+
+(setf bst-nums nil)
+(dolist (x '(5 8 4 2 1 9 6 7 3))
+  (setf bst-nums (bst-insert x bst-nums #'<)))
+
+
+;;;;------------------------------------
+;;;; 4.8 ハッシュテーブル
+;;;;------------------------------------
+
+(setf ht (make-hash-table))
+;; -> #S(HASH-TABLE :TEST FASTHASH-EQL)
+
+(gethash 'color ht)
+;; -> NIL NIL
+;;   第1の戻り値はkeyに対応するvalue
+;;   第2の戻り値はkeyに対応するvalueをテーブルがもつかどうか
+
+(setf (gethash 'color ht) 'red)
+;; -> RED
+
+(gethash 'color ht)
+;; -> RED
+;; -> T
+
+
+;;; valueの保持はsetfの他にpushも使える
+(set bugs (make-hash-table))
+
+(defun my-member (obj lst)
+  (if (null lst)
+	  nil
+	  (if (eql (car lst) obj)
+		  lst
+		  (my-member obj (cdr lst)))))
+
+(push "doesn't take keyword arguments."
+	  (gethash #'my-member bugs))
+
+(gethash #'my-member bugs)
+;; -> ("doesn't take keyword arguments.")
+;; -> T
+
+
+;;; remhash : テーブルからオブジェクトを削除
+(remhash 'color ht)
+;; -> NIL
+
+;;; maphash : テーブルの全てのkey-valueに対し関数を適用する
+(setf (gethash 'color ht) 'blue
+	  (gethash 'sharp ht) 'spherical
+	  (gethash 'size ht) 'giant)
+
+(maphash #'(lambda (key value)
+			 (format t "~A = ~A~%" key value))
+		 ht)
+;; -> SIZE = GIANT
+;; -> SHARP = SPHERICAL
+;; -> COLOR = BLUE
+;; -> NIL
+
+
+;; ハッシュテーブルのtest関数の入れ替えも可能
+
+(setf writers (make-hash-table))
+(setf (gethash '(ralph waldo emerson) writers) t)
+(gethash '(ralph waldo emerson) writers)
+;; -> NIL
+;;    デフォルトのtest関数はeqlのため
+
+(setf writers2 (make-hash-table :test #'equal))
+(setf (gethash '(ralph waldo emerson) writers2) t)
+(gethash '(ralph waldo emerson) writers2)
+;; -> T
 
 
 
