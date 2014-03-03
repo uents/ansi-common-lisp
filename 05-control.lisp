@@ -152,7 +152,77 @@
 ;;;; 5.7 例：日付計算
 ;;;;------------------------------------
 
+(defconstant month
+  #(0 31 59 90 120 151 181 212 243 273 304 334 365)) ;; ベクター(1次元配列)
 
+(defconstant yzero 2000)
+
+(defun leap? (y)
+  (and (zerop (mod y 4))
+	   (or (zerop (mod y 400))
+		   (not (zerop (mod y 100))))))
+
+(defun year-days (y)
+  (if (leap? y) 366 365))
+
+;;; 日付を日数に変換
+(defun date->num (d m y)
+  (+ (- d 1) (month-num m y) (year-num y)))
+
+;;; その月の開始前までの日数を返す
+(defun month-num (m y)
+  (+ (svref month (- m 1))
+	 (if (and (> m 2) (leap? y))
+		 1 ;; 閏年かつ2月以降ならさらに1日追加
+	     0)
+	 ))
+
+;;; その年の1/1に対応する日数を返す
+;;; (2000/1/1なら0)
+(defun year-num (y)
+  (let ((d 0))
+	(if (>= y yzero)
+		(dotimes (i (- y yzero) d)
+		  (incf d (year-days (+ yzero i))))
+	    (dotimes (i (- y yzero) (- d))
+		  (incf d (year-days (+ y i))))
+		)))
+
+;;; 日数を日付に変換
+(defun num->date (n)
+  (multiple-value-bind (y rest) (num-year n)
+	(multiple-value-bind (m d) (num-month rest y)
+	  (values d m y))))
+
+;;; 日数を年と余りの日数に変換
+(defun num-year (n)
+  (if (< n 0)
+	  (do* ((y (- yzero i) (- y 1))
+			(d (- (year-days y)) (- d (year-days y))))
+		  ((<= d n) (values y (- n d))))
+	  (do* ((y yzero (+ y 1))
+			(prev 0 d)
+			(d (year-days y) (+ d (year-days y))))
+		  ((> d n) (values y (- n prev))))
+	  ))
+
+;;; 日数を月と日に変換
+(defun num-month (n y)
+  (if (leap? y)
+	  (cond ((= n 59) (values 2 29))
+			((> n 59) (nmon (- n 1)))
+			(t (nmon n)))
+	  (nmon n)
+	  ))
+
+(defun nmon (n)
+  (let ((m (position n month :test #'<)))
+	(values m (+ 1 (- n (svref month (- m 1)))))
+	))
+
+;;; 日付に日数を加えた時の日付を求める
+(defun date+ (d m y n)
+  (num->date (+ (date->num d m y) n)))
 
 
 
