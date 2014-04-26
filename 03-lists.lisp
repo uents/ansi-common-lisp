@@ -477,7 +477,7 @@ lst ;; ==> (0 2 1 3 8)
 ;;; longest-path
 
 (defun longest-path (start end net)
-  (bfs-ex end (list (list start)) net nil))
+  (bfs-long end (list (list start)) net nil))
 
 (defun bfs-long (end queue net sol)
   (format t "queue=~A sol=~A ~%" queue sol)

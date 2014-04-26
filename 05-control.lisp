@@ -22,9 +22,9 @@
 
 ;;; let* 
 
-(let ((x 1)
-	  (y (+ x 1)))
-  (+ x y))
+;(let ((x 1)
+;	  (y (+ x 1)))
+;  (+ x y))
 ;; -> letのなかでxを参照できないため、
 ;;    (+ y (+ x 1)) でエラーする
 
@@ -139,9 +139,9 @@
 ;;; error :
 ;;; エラーハンドラ (エラー対処用に特別に用意されている機構) へ遷移する
 
-(progn
-  (error "oops! i did again.") ;; -> ここでエラー発生
-  (format t ("after the error.")))
+;(progn
+;  (error "oops! i did it again.") ;; -> ここでエラー発生
+;  (format t ("after the error.")))
 
 ;;; unwind-protect :
 ;;; throwやerrorのような割り込みを無効にする
@@ -184,7 +184,7 @@
 	(if (>= y yzero)
 		(dotimes (i (- y yzero) d)
 		  (incf d (year-days (+ yzero i))))
-	    (dotimes (i (- y yzero) (- d))
+	    (dotimes (i (- yzero y) (- d))
 		  (incf d (year-days (+ y i))))
 		)))
 
@@ -197,7 +197,7 @@
 ;;; 日数を年と余りの日数に変換
 (defun num-year (n)
   (if (< n 0)
-	  (do* ((y (- yzero i) (- y 1))
+	  (do* ((y (- yzero 1) (- y 1))
 			(d (- (year-days y)) (- d (year-days y))))
 		  ((<= d n) (values y (- n d))))
 	  (do* ((y yzero (+ y 1))

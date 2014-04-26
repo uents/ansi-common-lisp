@@ -138,6 +138,16 @@
 ;; reduce : シーケンスの値をひとつにまとめる
 (reduce #'+ '(1 2 3 4 5 6)) ;; -> 21
 
+; lengthもこう書ける
+(defun my-length (lst)
+  (reduce #'(lambda (accum elem)
+			  (progn
+				(format t "acc:~A elem:~A ~%" accum elem)
+				(+ accum 1)
+				))
+		  lst
+		  :initial-value 0))
+
 
 ;;;;------------------------------------
 ;;;; 4.5 例：日付解析
@@ -274,6 +284,7 @@
 				 :l (node-l bst)
 				 :r (bst-insert obj (node-r bst) test))
 				)))))
+
 
 
 (defun bst-print (bst &optional (depth 0))
