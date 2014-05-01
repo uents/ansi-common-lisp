@@ -1,5 +1,5 @@
 ;;;;
-;;;; @brief 5. 制御構造
+;;;; @brief 6. 制御構造
 ;;;; @see ANSI Common Lisp
 ;;;;
 
@@ -47,7 +47,6 @@
 ;;;; 6.5 クロージャ
 ;;;;------------------------------------
 
-
 ;;;;------------------------------------
 ;;;; 6.6 関数ビルダ
 ;;;;------------------------------------
@@ -55,13 +54,41 @@
 (defun compose-simple (f g)
   (lambda (x) (funcall f (funcall g x))))
 
+(defun compose (&rest funcs)
+  (destructuring-bind (func1 . rest_funcs) (reverse funcs)
+	#'(lambda (&rest args)
+		(reduce #'(lambda (accum func) (funcall func accum))
+				rest_funcs
+				:initial-value (apply func1 args)))))
+
+;; destructuring-bind を使わない方がシンプルに書ける
+(defun compose-ex (func &rest funcs)
+  (if (null funcs)
+	  func
+	  #'(lambda (&rest args)
+		  (reduce #'(lambda (accum f) (funcall f accum))
+				  funcs
+				  :initial-value (apply func args)))))
+
 (defun disjoin (func &rest funcs)
   (if (null funcs)
 	  func
 	  (let ((disj (apply #'disjoin funcs)))
 		#'(lambda (&rest args)
 			(or (apply func args) (apply disj args))))))
-  
+
+;; -> 再帰呼び出しで展開され
+;;  (or (apply f1 args) (or (apply f2 args) (or (apply f3 args) (apply f4 args))))
+;; のような形で評価される
+
+(defun conjoin (func &rest funcs)
+  (if (null funcs)
+	  func
+	  (let ((conj (apply #'conjoin funcs)))
+		#'(lambda (&rest args)
+			(and (apply func args) (apply conj args))))))
+
+
 
 ;;;;------------------------------------
 ;;;; 6.7 動的スコープ

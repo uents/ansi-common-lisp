@@ -142,7 +142,7 @@
 (defun my-length (lst)
   (reduce #'(lambda (accum elem)
 			  (progn
-				(format t "acc:~A elem:~A ~%" accum elem)
+;				(format t "acc:~A elem:~A ~%" accum elem)
 				(+ accum 1)
 				))
 		  lst
